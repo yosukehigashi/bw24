@@ -1,8 +1,10 @@
-from flask import Flask
 import requests
 from bs4 import BeautifulSoup
+from flask import Flask
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 
 def scrape_listing(room_id):
