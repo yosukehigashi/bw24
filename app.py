@@ -54,7 +54,7 @@ def scrape_listing(room_id):
 
     return title, [
         "https://www.instabase.jp" + directory for directory in list(dirs)
-    ]
+    ], tags
 
 
 def function_call_prompt(long_text: str) -> str:
