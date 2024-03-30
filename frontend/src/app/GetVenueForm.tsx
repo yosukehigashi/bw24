@@ -38,7 +38,7 @@ export const GetVenueForm = () => {
       console.log('venueId:', venueId);
       setIsLoading(false);
       console.log('response:', data);
-      setValue({ id: venueId, initialImageUrls: data?.urls, title: data?.title });
+      setValue({ id: venueId, initialImageUrls: data?.urls, title: data?.title, tags: data?.tags });
       router.push(`/venue`);
     }
     
