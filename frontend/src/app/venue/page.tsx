@@ -18,6 +18,7 @@ import {
     DialogContent,
     Button,
     Spinner,
+    Divider,
   } from "@fluentui/react-components";
 
 import { Radio, RadioGroup } from "@fluentui/react-components";
@@ -40,6 +41,17 @@ const Photo = ({ url, imageIdx, onCheckboxClick }: { url: string, imageIdx: numb
                 height={200}
                 // priority
                 />
+        </div>
+    )
+}
+
+const ResultPhoto = ({ base64 }: { base64: string }) => {
+    return (
+        <div className={styles.wrapperResultPhoto}>
+            <img src={`data:image/png;base64, ${base64}`} height={200} />
+            <div className={styles.wrapperDownloadButton}>
+                <Button as={"a"} href={`data:image/png;base64, ${base64}`} download>Download</Button>
+            </div>
         </div>
     )
 }
@@ -91,7 +103,8 @@ export default function VenuePage() {
             },
             body: JSON.stringify({
                 images: imageBase64,
-                trend: selectedTrend
+                trend: selectedTrend,
+                tags: value?.tags
             }),
         });
 
@@ -119,66 +132,71 @@ export default function VenuePage() {
     }
 
     return (
-        <div className={styles.container}>
-            <div className={styles.wrapperTitle}>
-                <LargeTitle>{value?.title}</LargeTitle>
-            </div>
+        <div className={styles.main}>
+            <div className={styles.container}>
+                <div className={styles.wrapperTitle}>
+                    <LargeTitle>{value?.title}</LargeTitle>
+                </div>
 
-            <Subtitle1>Initial photos</Subtitle1>
-            <div className={styles.wrapperPhotos}>
-                {value?.initialImageUrls?.map((url, idx) => {
-                    console.log('url', url)
-                    return <Photo url={url} key={url} imageIdx={idx} onCheckboxClick={toggleImageFromSelection} />
+                <Subtitle1>Initial photos</Subtitle1>
+                <div className={styles.wrapperPhotos}>
+                    {value?.initialImageUrls?.map((url, idx) => {
+                        console.log('url', url)
+                        return <Photo url={url} key={url} imageIdx={idx} onCheckboxClick={toggleImageFromSelection} />
+                    })}
+                </div>
+
+                <div className={styles.wrapperDivider}>
+                    <Divider />
+                </div>
+
+                <Subtitle1>Actions</Subtitle1>
+                <div className={styles.controlPannel}>
+                    <Button onClick={handleUpscale}>Upscale</Button>
+                    <Dialog>
+                        <DialogTrigger disableButtonEnhancement>
+                            <Button>Apply trend</Button>
+                        </DialogTrigger>
+                        <DialogSurface>
+                            <DialogBody>
+                            <DialogTitle>Choose a trend for your space</DialogTitle>
+                            <DialogContent>
+                            <RadioGroup>
+                                {TRENDS.map((trend) => {
+                                    return <Radio key={trend} value={trend} label={trend} onChange={() => setSelectedTrend(trend)} />
+                                })}
+                            </RadioGroup>
+                            </DialogContent>
+                            <DialogActions>
+                                <DialogTrigger disableButtonEnhancement>
+                                <Button appearance="secondary">Close</Button>
+                                </DialogTrigger>
+                                <Button appearance="primary" onClick={handleApplyTrend}>Apply trend</Button>
+                                {isApplyTrendsLoading && <Spinner size='large' />}
+                            </DialogActions>
+                            </DialogBody>
+                        </DialogSurface>
+                    </Dialog>
+                </div>
+
+                <div className={styles.wrapperDivider}>
+                    <Divider />
+                </div>
+
+                <Subtitle1>Results</Subtitle1>
+                {resultsArray.map((result, idx) => {
+                    return (
+                        <div className={styles.wrapperResultRow} key={idx}>
+                            <Subtitle1>#{idx}: {result.trend}</Subtitle1>
+                            <div className={styles.wrapperPhotos}>
+                                {result.images.map((base64, idx) => {
+                                    return <ResultPhoto base64={base64} key={idx} />
+                                })}
+                            </div>
+                        </div>
+                    )
                 })}
             </div>
-
-            {/* @TODO */}
-            {/* 1. Loading */}
-            {/* 2. Download button */}
-            {/* 3. Show results */}
-
-            <Subtitle1>Actions</Subtitle1>
-            <div className={styles.controlPannel}>
-                <Button onClick={handleUpscale}>Upscale</Button>
-                <Dialog>
-                    <DialogTrigger disableButtonEnhancement>
-                        <Button>Apply trend</Button>
-                    </DialogTrigger>
-                    <DialogSurface>
-                        <DialogBody>
-                        <DialogTitle>Choose a trend for your space</DialogTitle>
-                        <DialogContent>
-                        <RadioGroup>
-                            {TRENDS.map((trend) => {
-                                return <Radio key={trend} value={trend} label={trend} onChange={() => setSelectedTrend(trend)} />
-                            })}
-                        </RadioGroup>
-                        </DialogContent>
-                        <DialogActions>
-                            <DialogTrigger disableButtonEnhancement>
-                            <Button appearance="secondary">Close</Button>
-                            </DialogTrigger>
-                            <Button appearance="primary" onClick={handleApplyTrend}>Apply trend</Button>
-                            {isApplyTrendsLoading && <Spinner size='large' />}
-                        </DialogActions>
-                        </DialogBody>
-                    </DialogSurface>
-                </Dialog>
-            </div>
-
-            <Subtitle1>Results</Subtitle1>
-            {resultsArray.map((result, idx) => {
-                return (
-                    <div key={idx}>
-                        <Subtitle1>{result.trend}</Subtitle1>
-                        <div className={styles.wrapperPhotos}>
-                            {result.images.map((base64, idx) => {
-                                return <img src={`data:image/png;base64, ${base64}`} key={idx} height={200} />
-                            })}
-                        </div>
-                    </div>
-                )
-            })}
         </div>
     )
 }

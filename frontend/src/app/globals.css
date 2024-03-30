@@ -93,6 +93,8 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb)); */
+
+  background: linear-gradient(90.1deg, rgb(158, 252, 203) 16.8%, rgb(63, 100, 255) 105.2%);
 }
 
 a {
