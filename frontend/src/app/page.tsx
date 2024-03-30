@@ -12,13 +12,15 @@ import {
   Display,
   Label,
   Input,
-  useId
+  useId,
+  Spinner,
 } from "@fluentui/react-components";
 import { useState } from "react";
 
 export default function Home() {
   const router = useRouter()
   const [url, setUrl] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const largeId = useId("input-large");
 
   const handleFetchVenue = async () => {
@@ -27,6 +29,7 @@ export default function Home() {
   }
 
   const fetchVenue = async (venueId: string) => {
+    setIsLoading(true);
     const response = await fetch(`http://127.0.0.1:8080/venue/${venueId}`, {
       method: "GET",
       headers: {
@@ -36,8 +39,8 @@ export default function Home() {
 
     // const data = await response.json();
     console.log('venueId:', venueId);
+    setIsLoading(false);
     router.push(`/venue`);
-
   }
 
   return (
@@ -56,7 +59,7 @@ export default function Home() {
               }}/>
             </div>
 
-            <Button appearance="primary" onClick={handleFetchVenue}>Find my venue</Button>
+            <Button appearance="primary" onClick={handleFetchVenue} icon={isLoading ? <Spinner size="tiny" /> : undefined}>Find my venue</Button>
           </div>
         </div>
         {/* <div className={styles.description}>
