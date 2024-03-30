@@ -219,11 +219,32 @@ def edit():
     print(f'Search prompts: {search_prompts}')
     print(f'Replace prompts: {replace_prompts}')
 
-    edited_image = edit_single_image(
-        base64.decodebytes(bytes(original_image, 'utf-8')), replace_prompts[0],
-        search_prompts[0])
+    # Map an edit ID to the edited image
+    edited_dict = {}
+    original_image_bytes = base64.decodebytes(bytes(original_image, 'utf-8'))
 
-    return {'image': base64.b64encode(edited_image).decode('utf-8')}
+    # First round (prompt_0, prompt_1, prompt_2)
+    for i, (replace_prompt,
+            search_prompt) in enumerate(zip(replace_prompts, search_prompts)):
+        edited = edit_single_image(original_image_bytes, replace_prompt,
+                                   search_prompt)
+        edited_dict[f'{i}'] = edited
+
+    # Second round (prompt_0 -> prompt_1, prompt_1 -> prompt_2, prompt_2 -> prompt_0)
+    num_prompts = len(search_prompts)
+    for i in range(num_prompts):
+        next_idx = (i + 1) % num_prompts
+        edited = edit_single_image(edited_dict[f'{i}'],
+                                   replace_prompts[next_idx],
+                                   search_prompts[next_idx])
+        edited_dict[f'{i}->{next_idx}'] = edited
+
+    # Third round (prompt_0 -> prompt_1 -> prompt_2)
+    edited = edit_single_image(edited_dict[f'0->1'], replace_prompts[2],
+                               search_prompts[2])
+    edited_dict['0->1->2'] = edited
+
+    return {'image': base64.b64encode(edited_dict['0->1->2']).decode('utf-8')}
 
 
 @app.route('/upscale', methods=['GET', 'POST'])
