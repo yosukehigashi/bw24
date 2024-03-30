@@ -49,12 +49,7 @@ def venue(venueid):
 
 @app.route('/edit', methods=['GET', 'POST'])
 def edit():
-    print(request.json['trend'])
-
-    b64image = request.args.get('images')
-
-    in_image = "/Users/kianbenner/Downloads/ib-kitchen.webp"
-
+    trend = request.json['trend']
     response = requests.post(
         f"{api_host}/v1/generation/{engine_id}/image-to-image/upscale",
         headers={
@@ -76,7 +71,33 @@ def edit():
     with open("out.jpeg", "wb") as fd:
         fd.write(response.content)
 
-    return {'image': base64.encodebytes(response.content).decode("utf-8")}
+    return {'image': base64.b64encode(response.content).decode('utf-8')}
+
+
+@app.route('/upscale', methods=['GET', 'POST'])
+def upscale():
+    response = requests.post(
+        f"{api_host}/v1/generation/{engine_id}/image-to-image/upscale",
+        headers={
+            "Accept": "image/png",
+            "Authorization": f"Bearer {api_key}"
+        },
+        files={
+            "image": base64.decodebytes(bytes(request.json['images'], 'utf-8'))
+        },
+        data={
+            "width": 1024,
+        }
+    )
+
+    if response.status_code != 200:
+        print(str(response.text))
+        return None
+
+    # with open("out.jpeg", "wb") as fd:
+    #     fd.write(response.content)
+
+    return {'image': base64.b64encode(response.content).decode('utf-8')}
 
 
 if __name__ == '__main__':
