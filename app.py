@@ -1,5 +1,6 @@
 import base64
 import io
+import json
 import os
 import random
 
@@ -46,6 +47,18 @@ def scrape_listing(room_id):
 
     return title, ["https://www.instabase.jp" + directory for directory in list(dirs)]
 
+def function_call_prompt(long_text: str) -> str:
+    return f'''
+    The following text describes three calls to a
+    `search_and_replace(search_prompt, replace_prompt)` function.:
+    ************
+    [Text]: {long_text}
+    ************
+
+    Call the function `search_and_replace_all(search_prompts, replace_prompts)`,
+    where `search_prompts` is the list of the three search prompts and
+    `replace_prompts` is the list of the three corresponding replace prompts.
+    '''
 
 def get_search_and_replace_prompts(trend, image):
     prompt = f"""
@@ -83,6 +96,54 @@ def get_search_and_replace_prompts(trend, image):
         max_tokens=2000)
     description = response.choices[0].message.content
     print(description)
+
+    # Call the GPT-4-Turbo model using function calling to get a structured
+    # response
+    fn_call_messages = [{
+        "role": "user",
+        "content": function_call_prompt(description)
+    }]
+    functions = [{
+        "name": 'search_and_replace_all',
+        "description": 'Applies search and replace edits to an image',
+        "parameters": {
+            "type": "object",
+            "properties": {
+                'search_prompts': {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": 'List of three search prompts',
+                },
+                'replace_prompts': {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": 'List of three replace prompts',
+                }
+            },
+            "required": ['search_prompts', 'replace_prompts'],
+        }
+    }]
+    response = client.chat.completions.create(
+        model='gpt-4',
+        messages=fn_call_messages,
+        seed=42,
+        functions=functions,
+        function_call={"name": 'search_and_replace_all'})
+    # For type checking
+    assert response.choices[0].message.function_call is not None
+    function_args = json.loads(
+        response.choices[0].message.function_call.arguments)
+    search_prompts = function_args.get('search_prompts')
+    replace_prompts = function_args.get('replace_prompts')
+    print(search_prompts, replace_prompts)
+    assert search_prompts is not None
+    assert replace_prompts is not None
+    assert len(search_prompts) == 3
+    assert len(replace_prompts) == 3
 
 @app.route('/venue/<venueid>', methods=['GET'])
 def venue(venueid):
