@@ -1,18 +1,21 @@
+import base64
+import io
 import os
 import random
-import io
-import base64
+
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask, request, send_file, make_response
+from dotenv import load_dotenv
+from flask import Flask, make_response, request, send_file
 from flask_cors import CORS
 
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
-api_host = "https://api.stability.ai"
-api_key = "sk-FoBZjZv2ycmp18dNoD3N97HYq39JWLzSuF0uWlBO5fkebmsY"
+stability_ai_api_host = "https://api.stability.ai"
+stability_ai_api_key = os.getenv("STABILITY_AI_API_KEY")
 
 engine_id = "esrgan-v1-x2plus"
 
@@ -51,10 +54,10 @@ def venue(venueid):
 def edit():
     trend = request.json['trend']
     response = requests.post(
-        f"{api_host}/v1/generation/{engine_id}/image-to-image/upscale",
+        f"{stability_ai_api_host}/v1/generation/{engine_id}/image-to-image/upscale",
         headers={
             "Accept": "image/png",
-            "Authorization": f"Bearer {api_key}"
+            "Authorization": f"Bearer {stability_ai_api_key}"
         },
         files={
             "image": base64.decodebytes(bytes(request.json['images'], 'utf-8'))
@@ -77,10 +80,10 @@ def edit():
 @app.route('/upscale', methods=['GET', 'POST'])
 def upscale():
     response = requests.post(
-        f"{api_host}/v1/generation/{engine_id}/image-to-image/upscale",
+        f"{stability_ai_api_host}/v1/generation/{engine_id}/image-to-image/upscale",
         headers={
             "Accept": "image/png",
-            "Authorization": f"Bearer {api_key}"
+            "Authorization": f"Bearer {stability_ai_api_key}"
         },
         files={
             "image": base64.decodebytes(bytes(request.json['images'], 'utf-8'))

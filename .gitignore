@@ -1,6 +1,8 @@
 .python-version
 /env/
 .vscode
+.env
+out.jpeg
 
 /frontend/node_modules
 /frontend/.pnp
