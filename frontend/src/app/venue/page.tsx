@@ -3,11 +3,26 @@
 import React, { useState } from 'react';
 import { useVenueContext } from '../venueProvider';
 
-import { LargeTitle } from '@fluentui/react-text';
+import { LargeTitle, Subtitle1 } from '@fluentui/react-text';
 
 import styles from "./venue.module.css";
 import { Checkbox } from '@fluentui/react-checkbox';
-import { Button } from '@fluentui/react-button';
+
+import {
+    Dialog,
+    DialogTrigger,
+    DialogSurface,
+    DialogTitle,
+    DialogBody,
+    DialogActions,
+    DialogContent,
+    Button,
+    Spinner,
+  } from "@fluentui/react-components";
+
+import { Radio, RadioGroup } from "@fluentui/react-components";
+
+const TRENDS = ['pizza_party', 'karaoke', 'poetry_reading']
 
 const Photo = ({ url, imageIdx, onCheckboxClick }: { url: string, imageIdx: number, onCheckboxClick: (idx: number) => void }) => {
     return (
@@ -42,6 +57,8 @@ function getBase64Image(img: any) {
 
 export default function VenuePage() {
     const [selectedImages, setSelectedImages] = useState<number[]>([]);
+    const [selectedTrend, setSelectedTrend] = useState<string | undefined>();
+    const [isApplyTrendsLoading, setIsApplyTrendsLoading] = useState<boolean>(false);
     const { value } = useVenueContext();
 
     const toggleImageFromSelection = (imageIdx: number) => {
@@ -69,7 +86,7 @@ export default function VenuePage() {
             },
             body: JSON.stringify({
                 images: imageBase64,
-                trend: "pizza_party"
+                trend: selectedTrend
             }),
         });
 
@@ -77,8 +94,15 @@ export default function VenuePage() {
         console.log(data)
     }
 
-    const handleApplyTrend = () => {
-        selectedImages.forEach(fetchApplyTrend);
+    const handleApplyTrend = async () => {
+        setIsApplyTrendsLoading(true);
+        // const promises = selectedImages.forEach(fetchApplyTrend);
+        const promises = selectedImages.map(fetchApplyTrend);
+
+        const results = await Promise.all(promises);
+        setIsApplyTrendsLoading(false);
+
+        console.log('results', results)
     }
 
     return (
@@ -87,15 +111,50 @@ export default function VenuePage() {
                 <LargeTitle>{value?.title}</LargeTitle>
             </div>
 
-            {value?.initialImageUrls?.map((url, idx) => {
-                console.log('url', url)
-                return <Photo url={url} key={url} imageIdx={idx} onCheckboxClick={toggleImageFromSelection} />
-            })}
-
-            <div className="controlPannel">
-                <Button onClick={handleUpscale}>Upscale</Button>
-                <Button onClick={handleApplyTrend}>Apply trend</Button>
+            <Subtitle1>Initial photos</Subtitle1>
+            <div className={styles.wrapperPhotos}>
+                {value?.initialImageUrls?.map((url, idx) => {
+                    console.log('url', url)
+                    return <Photo url={url} key={url} imageIdx={idx} onCheckboxClick={toggleImageFromSelection} />
+                })}
             </div>
+
+            {/* @TODO */}
+            {/* 1. Loading */}
+            {/* 2. Download button */}
+            {/* 3. Show results */}
+
+
+            <Subtitle1>Actions</Subtitle1>
+            <div className={styles.controlPannel}>
+                <Button onClick={handleUpscale}>Upscale</Button>
+                <Dialog>
+                    <DialogTrigger disableButtonEnhancement>
+                        <Button>Apply trend</Button>
+                    </DialogTrigger>
+                    <DialogSurface>
+                        <DialogBody>
+                        <DialogTitle>Choose a trend for your space</DialogTitle>
+                        <DialogContent>
+                        <RadioGroup>
+                            {TRENDS.map((trend) => {
+                                return <Radio key={trend} value={trend} label={trend} onChange={() => setSelectedTrend(trend)} />
+                            })}
+                        </RadioGroup>
+                        </DialogContent>
+                        <DialogActions>
+                            <DialogTrigger disableButtonEnhancement>
+                            <Button appearance="secondary">Close</Button>
+                            </DialogTrigger>
+                            <Button appearance="primary" onClick={handleApplyTrend}>Apply trend</Button>
+                            {isApplyTrendsLoading && <Spinner size='large' />}
+                        </DialogActions>
+                        </DialogBody>
+                    </DialogSurface>
+                </Dialog>
+            </div>
+
+            <Subtitle1>Results</Subtitle1>
         </div>
     )
 }
