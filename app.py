@@ -1,10 +1,20 @@
+import os
+import random
+import io
+import base64
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask
+from flask import Flask, request, send_file, make_response
 from flask_cors import CORS
+
 
 app = Flask(__name__)
 CORS(app)
+
+api_host = "https://api.stability.ai"
+api_key = "sk-FoBZjZv2ycmp18dNoD3N97HYq39JWLzSuF0uWlBO5fkebmsY"
+
+engine_id = "esrgan-v1-x2plus"
 
 
 def scrape_listing(room_id):
@@ -35,6 +45,38 @@ def scrape_listing(room_id):
 def venue(venueid):
     title, urls = scrape_listing(venueid)
     return {'title': title, 'urls': urls[:3]}
+
+
+@app.route('/edit', methods=['GET', 'POST'])
+def edit():
+    print(request.json['trend'])
+
+    b64image = request.args.get('images')
+
+    in_image = "/Users/kianbenner/Downloads/ib-kitchen.webp"
+
+    response = requests.post(
+        f"{api_host}/v1/generation/{engine_id}/image-to-image/upscale",
+        headers={
+            "Accept": "image/png",
+            "Authorization": f"Bearer {api_key}"
+        },
+        files={
+            "image": base64.decodebytes(bytes(request.json['images'], 'utf-8'))
+        },
+        data={
+            "width": 1024,
+        }
+    )
+
+    if response.status_code != 200:
+        print(str(response.text))
+        return None
+
+    with open("out.jpeg", "wb") as fd:
+        fd.write(response.content)
+
+    return {'image': base64.encodebytes(response.content).decode("utf-8")}
 
 
 if __name__ == '__main__':
