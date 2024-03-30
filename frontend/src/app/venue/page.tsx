@@ -17,6 +17,7 @@ import {
     DialogActions,
     DialogContent,
     Button,
+    Spinner,
   } from "@fluentui/react-components";
 
 import { Radio, RadioGroup } from "@fluentui/react-components";
@@ -57,6 +58,7 @@ function getBase64Image(img: any) {
 export default function VenuePage() {
     const [selectedImages, setSelectedImages] = useState<number[]>([]);
     const [selectedTrend, setSelectedTrend] = useState<string | undefined>();
+    const [isApplyTrendsLoading, setIsApplyTrendsLoading] = useState<boolean>(false);
     const { value } = useVenueContext();
 
     const toggleImageFromSelection = (imageIdx: number) => {
@@ -92,8 +94,15 @@ export default function VenuePage() {
         console.log(data)
     }
 
-    const handleApplyTrend = () => {
-        selectedImages.forEach(fetchApplyTrend);
+    const handleApplyTrend = async () => {
+        setIsApplyTrendsLoading(true);
+        // const promises = selectedImages.forEach(fetchApplyTrend);
+        const promises = selectedImages.map(fetchApplyTrend);
+
+        const results = await Promise.all(promises);
+        setIsApplyTrendsLoading(false);
+
+        console.log('results', results)
     }
 
     return (
@@ -109,6 +118,12 @@ export default function VenuePage() {
                     return <Photo url={url} key={url} imageIdx={idx} onCheckboxClick={toggleImageFromSelection} />
                 })}
             </div>
+
+            {/* @TODO */}
+            {/* 1. Loading */}
+            {/* 2. Download button */}
+            {/* 3. Show results */}
+
 
             <Subtitle1>Actions</Subtitle1>
             <div className={styles.controlPannel}>
@@ -132,6 +147,7 @@ export default function VenuePage() {
                             <Button appearance="secondary">Close</Button>
                             </DialogTrigger>
                             <Button appearance="primary" onClick={handleApplyTrend}>Apply trend</Button>
+                            {isApplyTrendsLoading && <Spinner size='large' />}
                         </DialogActions>
                         </DialogBody>
                     </DialogSurface>
