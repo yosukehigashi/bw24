@@ -103,7 +103,8 @@ export default function VenuePage() {
             },
             body: JSON.stringify({
                 images: imageBase64,
-                trend: selectedTrend
+                trend: selectedTrend,
+                tags: value?.tags
             }),
         });
 
