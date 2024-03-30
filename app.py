@@ -24,6 +24,7 @@ engine_id = "esrgan-v1-x2plus"
 # OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+
 def scrape_listing(room_id):
     url = "https://www.instabase.jp" + "/space/" + str(room_id)
 
@@ -34,7 +35,10 @@ def scrape_listing(room_id):
     soup = BeautifulSoup(r.text, 'html.parser')
 
     dirs = filter(lambda x: x.startswith("/imgs/r/uploads/room_image/image/"),
-                  [img['src'].replace('medium', 'large') for img in soup.find_all('img')])
+                  [
+                      img['src'].replace('medium', 'large')
+                      for img in soup.find_all('img')
+                  ])
     dirs = list(dict.fromkeys(dirs))
 
     r = requests.get(url)
@@ -45,7 +49,10 @@ def scrape_listing(room_id):
 
     title = soup.find('h2', {'class': 'text-xl'}).text
 
-    return title, ["https://www.instabase.jp" + directory for directory in list(dirs)]
+    return title, [
+        "https://www.instabase.jp" + directory for directory in list(dirs)
+    ]
+
 
 def function_call_prompt(long_text: str) -> str:
     return f'''
@@ -59,6 +66,7 @@ def function_call_prompt(long_text: str) -> str:
     where `search_prompts` is the list of the three search prompts and
     `replace_prompts` is the list of the three corresponding replace prompts.
     '''
+
 
 def get_search_and_replace_prompts(trend, image):
     prompt = f"""
@@ -81,7 +89,7 @@ def get_search_and_replace_prompts(trend, image):
             "content": "You are a helpful assistant."
         }, {
             "role":
-                "user",
+            "user",
             "content": [{
                 "type": "text",
                 "text": prompt
@@ -90,8 +98,7 @@ def get_search_and_replace_prompts(trend, image):
                 "image_url": {
                     "url": f"data:image/jpeg;base64,{image}"
                 }
-            }
-            ]
+            }]
         }],
         max_tokens=2000)
     description = response.choices[0].message.content
@@ -139,11 +146,60 @@ def get_search_and_replace_prompts(trend, image):
         response.choices[0].message.function_call.arguments)
     search_prompts = function_args.get('search_prompts')
     replace_prompts = function_args.get('replace_prompts')
-    print(search_prompts, replace_prompts)
     assert search_prompts is not None
     assert replace_prompts is not None
     assert len(search_prompts) == 3
     assert len(replace_prompts) == 3
+    return search_prompts, replace_prompts
+
+
+def send_generation_request(host, params, image):
+    headers = {
+        "Accept": "image/*",
+        "Authorization": f"Bearer {stability_ai_api_key}"
+    }
+
+    # Encode parameters
+    files = {'image': image}
+
+    # Send request
+    print(f"Sending REST request to {host}...")
+    response = requests.post(host, headers=headers, files=files, data=params)
+    if not response.ok:
+        raise Exception(f"HTTP {response.status_code}: {response.text}")
+
+    return response
+
+
+def edit_single_image(input_image, prompt, search_prompt):
+    host = f"https://api.stability.ai/v2beta/stable-image/edit/search-and-replace"
+    negative_prompt = ""
+    seed = 0
+    output_format = "webp"
+    params = {
+        "seed": seed,
+        "mode": "search",
+        "output_format": output_format,
+        "prompt": prompt,
+        "negative_prompt": negative_prompt,
+        "search_prompt": search_prompt,
+    }
+    response = send_generation_request(host, params, input_image)
+    # Decode response
+    output_image = response.content
+    finish_reason = response.headers.get("finish-reason")
+    seed = response.headers.get("seed")
+
+    # Check for NSFW classification
+    if finish_reason == 'CONTENT_FILTERED':
+        raise Warning("Generation failed NSFW classifier")
+
+    # Save result for debugging
+    edited = f"edited_{seed}.{output_format}"
+    with open(edited, "wb") as f:
+        f.write(output_image)
+    return output_image
+
 
 @app.route('/venue/<venueid>', methods=['GET'])
 def venue(venueid):
@@ -155,29 +211,16 @@ def venue(venueid):
 def edit():
     original_image = request.json['images']
     trend = request.json['trend']
-    get_search_and_replace_prompts(trend, original_image)
-    response = requests.post(
-        f"{stability_ai_api_host}/v1/generation/{engine_id}/image-to-image/upscale",
-        headers={
-            "Accept": "image/png",
-            "Authorization": f"Bearer {stability_ai_api_key}"
-        },
-        files={
-            "image": base64.decodebytes(bytes(original_image, 'utf-8'))
-        },
-        data={
-            "width": 1024,
-        }
-    )
+    search_prompts, replace_prompts = get_search_and_replace_prompts(
+        trend, original_image)
+    print(f'Search prompts: {search_prompts}')
+    print(f'Replace prompts: {replace_prompts}')
 
-    if response.status_code != 200:
-        print(str(response.text))
-        return None
+    edited_image = edit_single_image(
+        base64.decodebytes(bytes(original_image, 'utf-8')), replace_prompts[0],
+        search_prompts[0])
 
-    with open("out.jpeg", "wb") as fd:
-        fd.write(response.content)
-
-    return {'image': base64.b64encode(response.content).decode('utf-8')}
+    return {'image': base64.b64encode(edited_image).decode('utf-8')}
 
 
 @app.route('/upscale', methods=['GET', 'POST'])
@@ -193,8 +236,7 @@ def upscale():
         },
         data={
             "width": 1024,
-        }
-    )
+        })
 
     if response.status_code != 200:
         print(str(response.text))

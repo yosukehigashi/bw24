@@ -3,6 +3,7 @@
 .vscode
 .env
 out.jpeg
+*.webp
 
 /frontend/node_modules
 /frontend/.pnp
