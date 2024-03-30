@@ -140,7 +140,7 @@ def get_search_and_replace_prompts(trend, image):
         }
     }]
     response = client.chat.completions.create(
-        model='gpt-4',
+        model='gpt-3.5-turbo',
         messages=fn_call_messages,
         seed=42,
         functions=functions,
@@ -299,7 +299,7 @@ def select_best_image(original_image, edited_dict, trend):
         },
     }]
     response = client.chat.completions.create(
-        model='gpt-4',
+        model='gpt-3.5-turbo',
         messages=fn_call_messages,
         seed=42,
         functions=functions,
@@ -353,11 +353,6 @@ def edit():
                                    replace_prompts[next_idx],
                                    search_prompts[next_idx])
         edited_dict[f'{i}->{next_idx}'] = edited
-
-    # Third round (prompt_0 -> prompt_1 -> prompt_2)
-    edited = edit_single_image(edited_dict[f'0->1'], replace_prompts[2],
-                               search_prompts[2])
-    edited_dict['0->1->2'] = edited
 
     # Select the best image
     best_edited_image = select_best_image(original_image, edited_dict, trend)
