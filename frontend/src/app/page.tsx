@@ -27,15 +27,12 @@ export default function Home() {
   }
 
   const fetchVenue = async (venueId: string) => {
-    // const response = await fetch("https://api.instabase.com/venue", {
-    //   method: "GET",
-    //   headers: {
-    //     "Content-Type": "application/json"
-    //   },
-    //   body: JSON.stringify({
-    //     id: venueId
-    //   })
-    // });
+    const response = await fetch("http://127.0.0.1:8080/venue", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json"
+      },
+    });
 
     // const data = await response.json();
     console.log('venueId:', venueId);
