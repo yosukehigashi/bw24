@@ -5,6 +5,7 @@ import React, { createContext, useContext, useState } from 'react';
 
 type Venue = {
     id: string;
+    title: string;
     initialImageUrls: string[];
 };
 

@@ -1,0 +1,28 @@
+.main {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6rem;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.wrapperTitle {
+    margin: 2rem 0 1rem;
+}
+
+.wrapperPhoto {
+    position: relative;
+}
+
+.wrapperCheckbox {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    background-color: white;
+}
