@@ -28,7 +28,7 @@ def scrape_listing(room_id):
 
     title = soup.find('h2', {'class': 'text-xl'}).text
 
-    return title, [url + directory for directory in list(dirs)]
+    return title, ["https://www.instabase.jp" + directory for directory in list(dirs)]
 
 
 @app.route('/venue/<venueid>', methods=['GET'])
