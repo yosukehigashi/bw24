@@ -1,10 +1,7 @@
 .main {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
     padding: 6rem;
     min-height: 100vh;
+    background: linear-gradient(90.1deg, rgb(158, 252, 203) 16.8%, rgb(63, 100, 255) 105.2%);
 }
 
 .container {
@@ -57,4 +54,8 @@
 
 .wrapperResultPhoto:hover .wrapperDownloadButton {
     visibility: visible;
+}
+
+.wrapperDivider {
+    margin: 2rem 0;
 }
