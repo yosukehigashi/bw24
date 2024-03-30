@@ -31,12 +31,12 @@ const Photo = ({ url, imageIdx, onCheckboxClick }: { url: string, imageIdx: numb
 
 function getBase64Image(img: any) {
     var canvas = document.createElement("canvas");
-    canvas.width = img.width;
-    canvas.height = img.height;
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
     var ctx = canvas.getContext("2d");
     ctx?.drawImage(img, 0, 0);
     var dataURL = canvas.toDataURL("image/png");
-    return dataURL.replace(/^data:image\/?[A-z]*;base64,/);
+    return dataURL.replace(/^data:image\/?[A-z]*;base64,/, "");
   }
   
 
@@ -68,7 +68,7 @@ export default function VenuePage() {
             "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                images: selectedImages,
+                images: imageBase64,
                 trend: "pizza_party"
             }),
         });
