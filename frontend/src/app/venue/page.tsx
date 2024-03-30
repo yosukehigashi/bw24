@@ -53,12 +53,17 @@ function getBase64Image(img: any) {
     var dataURL = canvas.toDataURL("image/png");
     return dataURL.replace(/^data:image\/?[A-z]*;base64,/, "");
   }
-  
+
+type ResultLineItem = {
+    images: string[];
+    trend: string;
+}
 
 export default function VenuePage() {
     const [selectedImages, setSelectedImages] = useState<number[]>([]);
     const [selectedTrend, setSelectedTrend] = useState<string | undefined>();
     const [isApplyTrendsLoading, setIsApplyTrendsLoading] = useState<boolean>(false);
+    const [resultsArray, setResultsArray] = useState<ResultLineItem[]>([]);
     const { value } = useVenueContext();
 
     const toggleImageFromSelection = (imageIdx: number) => {
@@ -91,7 +96,7 @@ export default function VenuePage() {
         });
 
         const data = await response.json();
-        console.log(data)
+        return data;
     }
 
     const handleApplyTrend = async () => {
@@ -100,6 +105,14 @@ export default function VenuePage() {
         const promises = selectedImages.map(fetchApplyTrend);
 
         const results = await Promise.all(promises);
+        const transformedResults = results.reduce((acc, result) => {
+            return {
+                images: [...acc.images, result.image],
+                trend: selectedTrend
+            }
+        }, {images: [], trend: selectedTrend})
+
+        setResultsArray([...resultsArray, transformedResults]);
         setIsApplyTrendsLoading(false);
 
         console.log('results', results)
@@ -123,7 +136,6 @@ export default function VenuePage() {
             {/* 1. Loading */}
             {/* 2. Download button */}
             {/* 3. Show results */}
-
 
             <Subtitle1>Actions</Subtitle1>
             <div className={styles.controlPannel}>
@@ -155,6 +167,18 @@ export default function VenuePage() {
             </div>
 
             <Subtitle1>Results</Subtitle1>
+            {resultsArray.map((result, idx) => {
+                return (
+                    <div key={idx}>
+                        <Subtitle1>{result.trend}</Subtitle1>
+                        <div className={styles.wrapperPhotos}>
+                            {result.images.map((base64, idx) => {
+                                return <img src={`data:image/png;base64, ${base64}`} key={idx} height={200} />
+                            })}
+                        </div>
+                    </div>
+                )
+            })}
         </div>
     )
 }
