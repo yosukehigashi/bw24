@@ -39,3 +39,22 @@
     flex-direction: row;
     gap: 0.5rem;
 }
+
+.wrapperResultRow {
+    margin: 0 0 1rem;
+}
+
+.wrapperResultPhoto {
+    position: relative;
+}
+
+.wrapperDownloadButton {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    visibility: hidden;
+}
+
+.wrapperResultPhoto:hover .wrapperDownloadButton {
+    visibility: visible;
+}

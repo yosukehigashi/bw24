@@ -44,6 +44,17 @@ const Photo = ({ url, imageIdx, onCheckboxClick }: { url: string, imageIdx: numb
     )
 }
 
+const ResultPhoto = ({ base64 }: { base64: string }) => {
+    return (
+        <div className={styles.wrapperResultPhoto}>
+            <img src={`data:image/png;base64, ${base64}`} height={200} />
+            <div className={styles.wrapperDownloadButton}>
+                <Button as={"a"} href={`data:image/png;base64, ${base64}`} download>Download</Button>
+            </div>
+        </div>
+    )
+}
+
 function getBase64Image(img: any) {
     var canvas = document.createElement("canvas");
     canvas.width = img.naturalWidth;
@@ -169,11 +180,11 @@ export default function VenuePage() {
             <Subtitle1>Results</Subtitle1>
             {resultsArray.map((result, idx) => {
                 return (
-                    <div key={idx}>
-                        <Subtitle1>{result.trend}</Subtitle1>
+                    <div className={styles.wrapperResultRow} key={idx}>
+                        <Subtitle1>#{idx}: {result.trend}</Subtitle1>
                         <div className={styles.wrapperPhotos}>
                             {result.images.map((base64, idx) => {
-                                return <img src={`data:image/png;base64, ${base64}`} key={idx} height={200} />
+                                return <ResultPhoto base64={base64} key={idx} />
                             })}
                         </div>
                     </div>
