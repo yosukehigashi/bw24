@@ -41,13 +41,16 @@ def scrape_listing(room_id):
 
     title = soup.find('h2', {'class': 'text-xl'}).text
 
-    return title, ["https://www.instabase.jp" + directory for directory in list(dirs)]
+    div = soup.find_all('div', {'class': 'mt-6'})[2]
+    tags = [i.text for i in div.find_all('button')]
+
+    return title, ["https://www.instabase.jp" + directory for directory in list(dirs)], tags
 
 
 @app.route('/venue/<venueid>', methods=['GET'])
 def venue(venueid):
-    title, urls = scrape_listing(venueid)
-    return {'title': title, 'urls': urls[:3]}
+    title, urls, tags = scrape_listing(venueid)
+    return {'title': title, 'urls': urls[:3], 'tags': tags}
 
 
 @app.route('/edit', methods=['GET', 'POST'])
