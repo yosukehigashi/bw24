@@ -31,9 +31,10 @@ def scrape_listing(room_id):
     return title, [url + directory for directory in list(dirs)]
 
 
-@app.route('/venue', methods=['GET'])
-def venue():
-    return {'dummy_id': 1}
+@app.route('/venue/<venueid>', methods=['GET'])
+def venue(venueid):
+    title, urls = scrape_listing(venueid)
+    return {'title': title, 'urls': urls[:3]}
 
 
 if __name__ == '__main__':
