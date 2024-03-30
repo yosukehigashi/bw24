@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from flask import Flask, make_response, request, send_file
 from flask_cors import CORS
+from openai import OpenAI
 
 load_dotenv()
 
@@ -19,6 +20,8 @@ stability_ai_api_key = os.getenv("STABILITY_AI_API_KEY")
 
 engine_id = "esrgan-v1-x2plus"
 
+# OpenAI client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def scrape_listing(room_id):
     url = "https://www.instabase.jp" + "/space/" + str(room_id)
@@ -44,6 +47,43 @@ def scrape_listing(room_id):
     return title, ["https://www.instabase.jp" + directory for directory in list(dirs)]
 
 
+def get_search_and_replace_prompts(trend, image):
+    prompt = f"""
+    You are an AI that has the function
+    `search_and_replace(search_prompt, replace_prompt)`. The function operates
+    as follows:
+    - search for the object or item specified in `search_prompt`
+    - generate a segmentation mask around the identified object or item
+    - inpaint the masked area with the prompt `replace_prompt`
+    
+    Output three calls to `search_and_replace(search_prompt, replace_prompt)`
+    that would make this venue look more like a {trend}.
+    """
+
+    # Call the GPT-4V model
+    response = client.chat.completions.create(
+        model="gpt-4-vision-preview",
+        messages=[{
+            "role": "system",
+            "content": "You are a helpful assistant."
+        }, {
+            "role":
+                "user",
+            "content": [{
+                "type": "text",
+                "text": prompt
+            }, {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/jpeg;base64,{image}"
+                }
+            }
+            ]
+        }],
+        max_tokens=2000)
+    description = response.choices[0].message.content
+    print(description)
+
 @app.route('/venue/<venueid>', methods=['GET'])
 def venue(venueid):
     title, urls = scrape_listing(venueid)
@@ -52,7 +92,9 @@ def venue(venueid):
 
 @app.route('/edit', methods=['GET', 'POST'])
 def edit():
+    original_image = request.json['images']
     trend = request.json['trend']
+    get_search_and_replace_prompts(trend, original_image)
     response = requests.post(
         f"{stability_ai_api_host}/v1/generation/{engine_id}/image-to-image/upscale",
         headers={
@@ -60,7 +102,7 @@ def edit():
             "Authorization": f"Bearer {stability_ai_api_key}"
         },
         files={
-            "image": base64.decodebytes(bytes(request.json['images'], 'utf-8'))
+            "image": base64.decodebytes(bytes(original_image, 'utf-8'))
         },
         data={
             "width": 1024,
