@@ -2,7 +2,7 @@
 /env/
 .vscode
 .env
-out.jpeg
+*.jpeg
 *.webp
 
 /frontend/node_modules

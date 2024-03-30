@@ -57,7 +57,7 @@ def scrape_listing(room_id):
     ], tags
 
 
-def function_call_prompt(long_text: str) -> str:
+def search_and_replace_function_call_prompt(long_text: str) -> str:
     return f'''
     The following text describes three calls to a
     `search_and_replace(search_prompt, replace_prompt)` function.:
@@ -110,8 +110,10 @@ def get_search_and_replace_prompts(trend, image):
     # Call the GPT-4-Turbo model using function calling to get a structured
     # response
     fn_call_messages = [{
-        "role": "user",
-        "content": function_call_prompt(description)
+        "role":
+        "user",
+        "content":
+        search_and_replace_function_call_prompt(description)
     }]
     functions = [{
         "name": 'search_and_replace_all',
@@ -156,6 +158,10 @@ def get_search_and_replace_prompts(trend, image):
     return search_prompts, replace_prompts
 
 
+def encode_image_bytes(image_bytes):
+    return base64.b64encode(image_bytes).decode('utf-8')
+
+
 def send_generation_request(host, params, image):
     headers = {
         "Accept": "image/*",
@@ -178,7 +184,7 @@ def edit_single_image(input_image, prompt, search_prompt):
     host = f"https://api.stability.ai/v2beta/stable-image/edit/search-and-replace"
     negative_prompt = ""
     seed = 0
-    output_format = "webp"
+    output_format = "jpeg"
     params = {
         "seed": seed,
         "mode": "search",
@@ -202,6 +208,115 @@ def edit_single_image(input_image, prompt, search_prompt):
     with open(edited, "wb") as f:
         f.write(output_image)
     return output_image
+
+
+def select_best_image_function_call_prompt(long_text, available_image_names,
+                                           trend) -> str:
+    return f'''
+    The following is an assessment of which edited image is the most appropriate
+    for depicting the a venue being used for a {trend}:
+    ************
+    [Text]: {long_text}
+    ************
+
+    Save the best edited image. The available input image names are:
+    {available_image_names}
+    '''
+
+
+def select_best_image(original_image, edited_dict, trend):
+    user_prompt = f"""
+    You are an expert at assessing the quality of edited images. The first image
+    is the original image of the venue (`original_image`), and the subsequent
+    images are edited images (`edited_image_1`, `edited_image_2`, etc.) that are
+    intended to show the venue being used for a {trend}.
+
+    Determine which edited image is the most appropriate. Consider factors such as
+    the general quality of the image and how realistic it looks, whether it is a
+    realistic edit of the original image, and whether it convincingly looks like the
+    venue is being used for a {trend}.
+
+    After explaining your reasoning, specify which edited image is the best choice.
+    Remember that the first image is the original image, the second image is
+    `edited_image_1`, the third image is `edited_image_2`, etc.
+    """
+
+    images_list = [{
+        "type": "image_url",
+        "image_url": {
+            "url": f"data:image/jpeg;base64,{original_image}"
+        }
+    }]
+    for _, edited_image in edited_dict.items():
+        images_list.append({
+            "type": "image_url",
+            "image_url": {
+                "url":
+                f"data:image/jpeg;base64,{encode_image_bytes(edited_image)}"
+            }
+        })
+    print(f'Evaluating the best out of {len(edited_dict)} images...')
+    content = [{"type": "text", "text": user_prompt}] + images_list
+    # Call the GPT-4V model
+    response = client.chat.completions.create(
+        model="gpt-4-vision-preview",
+        messages=[{
+            "role": "system",
+            "content": "You are a helpful assistant."
+        }, {
+            "role": "user",
+            "content": content
+        }])
+    description = response.choices[0].message.content
+    print(description)
+
+    # Call the GPT-4-Turbo model using function calling to get a structured
+    # response
+    available_image_names = [
+        f"edited_image_{i}" for i in range(1,
+                                           len(edited_dict) + 1)
+    ]
+    fn_call_messages = [{
+        "role":
+        "user",
+        "content":
+        select_best_image_function_call_prompt(description,
+                                               available_image_names, trend)
+    }]
+    functions = [{
+        "name": 'save_best_edited_image',
+        "description": 'Saves the best edited image',
+        "parameters": {
+            "type": "object",
+            "properties": {
+                'edited_image_name': {
+                    "type": "string",
+                    "enum": available_image_names,
+                    "description": 'Best edited image',
+                },
+            },
+            "required": ['edited_image_name'],
+        },
+    }]
+    response = client.chat.completions.create(
+        model='gpt-4',
+        messages=fn_call_messages,
+        seed=42,
+        functions=functions,
+        function_call={"name": 'save_best_edited_image'})
+    # For type checking
+    assert response.choices[0].message.function_call is not None
+    function_args = json.loads(
+        response.choices[0].message.function_call.arguments)
+    assessment = function_args.get('edited_image_name')
+    assert assessment is not None
+    # Return the image in edited_dict that corresponds to the best assessment
+    index = available_image_names.index(assessment)
+    key = list(edited_dict.keys())[index]
+    print(
+        f'Selected the best image {assessment} that corresponds to the edit with key {key}'
+    )
+    return edited_dict[key]
 
 
 @app.route('/venue/<venueid>', methods=['GET'])
@@ -244,7 +359,10 @@ def edit():
                                search_prompts[2])
     edited_dict['0->1->2'] = edited
 
-    return {'image': base64.b64encode(edited_dict['0->1->2']).decode('utf-8')}
+    # Select the best image
+    best_edited_image = select_best_image(original_image, edited_dict, trend)
+
+    return {'image': base64.b64encode(best_edited_image).decode('utf-8')}
 
 
 @app.route('/upscale', methods=['GET', 'POST'])
