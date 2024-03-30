@@ -27,7 +27,7 @@ export default function Home() {
   }
 
   const fetchVenue = async (venueId: string) => {
-    const response = await fetch("http://127.0.0.1:8080/venue", {
+    const response = await fetch(`http://127.0.0.1:8080/venue/${venueId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json"
