@@ -19,11 +19,30 @@ import {
     Button,
     Spinner,
     Divider,
+    Input,
+    Label,
   } from "@fluentui/react-components";
 
 import { Radio, RadioGroup } from "@fluentui/react-components";
 
 const TRENDS = ['pizza_party', 'karaoke', 'poetry_reading']
+const AD_PLATFORMS = ['Google', 'Facebook', 'Yahoo']
+
+const IS_MOCKING = false;
+const FAKE_RESULTS = [
+    {
+        images: ['https://via.placeholder.com/150', 'https://via.placeholder.com/150'],
+        trend: 'pizza_party'
+    },
+    {
+        images: ['https://via.placeholder.com/150', 'https://via.placeholder.com/150'],
+        trend: 'karaoke'
+    },
+    {
+        images: ['https://via.placeholder.com/150', 'https://via.placeholder.com/150'],
+        trend: 'poetry_reading'
+    }
+]
 
 const Photo = ({ url, imageIdx, onCheckboxClick }: { url: string, imageIdx: number, onCheckboxClick: (idx: number) => void }) => {
     return (
@@ -75,6 +94,7 @@ export default function VenuePage() {
     const [selectedImages, setSelectedImages] = useState<number[]>([]);
     const [selectedTrend, setSelectedTrend] = useState<string | undefined>();
     const [isApplyTrendsLoading, setIsApplyTrendsLoading] = useState<boolean>(false);
+    const [isAdvertiseLoading, setIsAdvertiseLoading] = useState<boolean>(false);
     const [resultsArray, setResultsArray] = useState<ResultLineItem[]>([]);
     const { value } = useVenueContext();
 
@@ -131,6 +151,10 @@ export default function VenuePage() {
         console.log('results', results)
     }
 
+    const handleAdvertise = () => {
+        console.log('Advertise');
+    }
+
     return (
         <div className={styles.main}>
             <div className={styles.container}>
@@ -153,6 +177,7 @@ export default function VenuePage() {
                 <Subtitle1>Actions</Subtitle1>
                 <div className={styles.controlPannel}>
                     <Button onClick={handleUpscale}>Upscale</Button>
+                    
                     <Dialog>
                         <DialogTrigger disableButtonEnhancement>
                             <Button>Apply trend</Button>
@@ -184,7 +209,7 @@ export default function VenuePage() {
                 </div>
 
                 <Subtitle1>Results</Subtitle1>
-                {resultsArray.map((result, idx) => {
+                {(!IS_MOCKING ? resultsArray : FAKE_RESULTS).map((result, idx) => {
                     return (
                         <div className={styles.wrapperResultRow} key={idx}>
                             <Subtitle1>#{idx}: {result.trend}</Subtitle1>
@@ -193,6 +218,42 @@ export default function VenuePage() {
                                     return <ResultPhoto base64={base64} key={idx} />
                                 })}
                             </div>
+                            
+                        <Dialog>
+                            <DialogTrigger disableButtonEnhancement>
+                                <Button>Advertise</Button>
+                            </DialogTrigger>
+                            <DialogSurface>
+                                <DialogBody>
+                                    <DialogTitle>Choose an advertising platform</DialogTitle>
+                                    <DialogContent>
+                                        <RadioGroup>
+                                            {AD_PLATFORMS.map((trend) => {
+                                                return <Radio key={trend} value={trend} label={trend} />
+                                            })}
+                                        </RadioGroup>
+
+                                        <div className={styles.wrapperBudget}>
+                                            <DialogTitle>Budget</DialogTitle>
+                                            
+                                            <div className={styles.wrapperBudgetInput}>
+                                                <Label>
+                                                    Advertising budget in Japanese yen (¥)
+                                                </Label>
+                                                <Input type="number" />
+                                            </div>
+                                        </div>
+                                    </DialogContent>
+                                    <DialogActions>
+                                        <DialogTrigger disableButtonEnhancement>
+                                        <Button appearance="secondary">Close</Button>
+                                        </DialogTrigger>
+                                        <Button appearance="primary" onClick={handleAdvertise}>Advertise</Button>
+                                        {isAdvertiseLoading && <Spinner size='large' />}
+                                    </DialogActions>
+                                </DialogBody>
+                            </DialogSurface>
+                        </Dialog>
                         </div>
                     )
                 })}

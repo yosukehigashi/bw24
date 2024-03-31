@@ -22,12 +22,8 @@ More details on Responsive Search ads can be found here:
 https://support.google.com/google-ads/answer/7684791
 """
 
-import sys
-import uuid
 import os
-
 from google.ads.googleads.client import GoogleAdsClient
-from google.ads.googleads.errors import GoogleAdsException
 
 os.environ["GOOGLE_ADS_CONFIGURATION_FILE_PATH"] = "~/Desktop/google_ads.yaml"
 CUSTOMER_ID = "6460230654"
