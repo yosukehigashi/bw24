@@ -12,13 +12,14 @@ import { useState } from "react";
 import { useId } from "@fluentui/react-components";
 import styles from "./page.module.css";
 import { useVenueContext } from './venueProvider';
+import { Section } from './venue/page';
 
 export const GetVenueForm = () => {
     const router = useRouter()
     const [url, setUrl] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const largeId = useId("input-large");
-    const { value, setValue } = useVenueContext();
+    const { setValue } = useVenueContext();
   
     const handleFetchVenue = async () => {
       const venueId = url.replace("https://www.instabase.jp/space/", "");
@@ -38,14 +39,15 @@ export const GetVenueForm = () => {
       console.log('venueId:', venueId);
       setIsLoading(false);
       console.log('response:', data);
-      setValue({ id: venueId, initialImageUrls: data?.urls, title: data?.title, tags: data?.tags });
+      setValue({ id: venueId, initialImageUrls: data?.urls, title: data?.title, tags: data?.tags, appropriateTrends: data?.trends, backupTrends: data?.backupTrends });
       router.push(`/venue`);
     }
     
     return (
         <div className={styles.wrapper}>
-            <Display>Instabase business suite</Display>
+          <Display>Instabase business suite</Display>
 
+          <Section>
             <div className={styles.form}>
               <div className={styles.wrapperInput}>
                 <Label size="large" htmlFor={largeId}>
@@ -56,8 +58,9 @@ export const GetVenueForm = () => {
                 }}/>
               </div>
 
-              <Button appearance="primary" onClick={handleFetchVenue} icon={isLoading ? <Spinner size="tiny" /> : undefined}>Find my venue</Button>
+              <Button appearance="primary" onClick={handleFetchVenue} icon={isLoading ? <Spinner appearance='inverted' size="tiny" /> : undefined}>Find my venue</Button>
             </div>
+            </Section>
           </div>
     );
 }
