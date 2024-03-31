@@ -8,11 +8,12 @@ import {
 } from "@fluentui/react-components";
 import { GetVenueForm } from "./GetVenueForm";
 
+import Image from 'next/image'
+
 export default function Home() {
   return (
     <FluentProvider theme={webLightTheme}>
         <main className={styles.main}>
-
           <GetVenueForm />
           
           {/* <div className={styles.description}>

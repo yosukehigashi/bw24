@@ -8,6 +8,8 @@ type Venue = {
     title: string;
     initialImageUrls: string[];
     tags: string[];
+    appropriateTrends: string[];
+    backupTrends: string[];
 };
 
 // Step 1: Create the context
