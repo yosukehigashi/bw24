@@ -224,9 +224,7 @@ async def edit_single_image(input_image, prompt, search_prompt):
         "negative_prompt": negative_prompt,
         "search_prompt": search_prompt,
     }
-    downscaled_image = downscale_image(encode_image_bytes(input_image), 0.5)
-    response = await send_generation_request_async(host, params,
-                                                   downscaled_image)
+    response = await send_generation_request_async(host, params, input_image)
     # Decode response
     output_image = response.content
     finish_reason = response.headers.get("finish-reason")
