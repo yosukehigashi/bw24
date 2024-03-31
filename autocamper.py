@@ -22,12 +22,8 @@ More details on Responsive Search ads can be found here:
 https://support.google.com/google-ads/answer/7684791
 """
 
-import sys
-import uuid
 import os
-
 from google.ads.googleads.client import GoogleAdsClient
-from google.ads.googleads.errors import GoogleAdsException
 
 os.environ["GOOGLE_ADS_CONFIGURATION_FILE_PATH"] = "~/Desktop/google_ads.yaml"
 CUSTOMER_ID = "6460230654"
@@ -385,6 +381,3 @@ def add_geo_targeting(client, customer_id, campaign_resource_name):
 
     for result in campaign_criterion_response.results:
         print(f'Added campaign criterion "{result.resource_name}".')
-
-
-generate_campaign(ib_id=4300218326)

@@ -13,6 +13,8 @@ from flask import Flask, make_response, request, send_file
 from flask_cors import CORS
 from openai import OpenAI
 
+from autocamper import generate_campaign
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -325,6 +327,23 @@ def select_best_image(original_image, edited_dict, trend):
     return edited_dict[key]
 
 
+def simple_prompt(prompt, sys_prompt="You are a helpful assistant."):
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{
+            "role": "system",
+            "content": sys_prompt,
+        }, {
+            "role": "user",
+            "content": prompt,
+        }],
+        max_tokens=100)
+
+    print(response.choices[0].message)
+
+    return response.choices[0].message
+
+
 @app.route('/venue/<venueid>', methods=['GET'])
 def venue(venueid):
     title, urls, tags = scrape_listing(venueid)
@@ -401,6 +420,48 @@ def upscale():
     #     fd.write(response.content)
 
     return {'image': base64.b64encode(response.content).decode('utf-8')}
+
+
+@app.route('/gen-campaign')
+def gen_campaign():
+    tags = request.json['tags']
+    trend = request.json['trend']
+
+    headlines = [hl[4:-1].replace("!", "") for hl in simple_prompt(
+        f"""Please make 3 unique 4 word headlines to get people to click on my link based on the following data: 
+                        {trend}, {tags}
+                        """,
+        "You are a search engine optimization assistant."
+    ).content.split("\n")]
+
+    descriptions = [hl[4:-1].replace("!", "") for hl in simple_prompt(
+        f"""Please make 2 unique 15 word descriptions to get people to click on my link based on the following data:  
+                        {trend}, {tags}
+                        """,
+        "You are a search engine optimization assistant."
+    ).content.split("\n")]
+
+    keywords = [hl[2:].replace("!", "") for hl in simple_prompt(
+        f"""Generate 10 popular search keywords that would help google searches find my listing based on the following terms:  
+                            {trend}, {tags}
+                            """,
+        "Output only the terms."
+    ).content.split("\n")]
+
+    return {"headlines": headlines, "descriptions": descriptions, "keywords": keywords}
+
+
+@app.route('/start-gac', methods=['POST'])
+def start_gac():
+    data = request.json
+    ib_id = data['venueid']
+    budget = data['budget']
+    headlines = data['headlines']
+    desc = data['desc']
+    keywords = data['keywords']
+
+    generate_campaign(ib_id, budget, headlines, desc, keywords)
+    return 0
 
 
 if __name__ == '__main__':
