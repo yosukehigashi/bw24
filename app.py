@@ -1,9 +1,11 @@
+import asyncio
 import base64
 import io
 import json
 import os
 import random
 
+import httpx
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -162,7 +164,7 @@ def encode_image_bytes(image_bytes):
     return base64.b64encode(image_bytes).decode('utf-8')
 
 
-def send_generation_request(host, params, image):
+async def send_generation_request_async(host, params, image):
     headers = {
         "Accept": "image/*",
         "Authorization": f"Bearer {stability_ai_api_key}"
@@ -173,15 +175,19 @@ def send_generation_request(host, params, image):
 
     # Send request
     print(f"Sending REST request to {host}...")
-    response = requests.post(host, headers=headers, files=files, data=params)
-    if not response.ok:
-        raise Exception(f"HTTP {response.status_code}: {response.text}")
+    timeout = httpx.Timeout(30.0, connect=60.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        response = await client.post(host,
+                                     headers=headers,
+                                     files=files,
+                                     data=params)
+        if not response.is_success:
+            raise Exception(f"HTTP {response.status_code}: {response.text}")
+        return response
 
-    return response
 
-
-def edit_single_image(input_image, prompt, search_prompt):
-    host = f"https://api.stability.ai/v2beta/stable-image/edit/search-and-replace"
+async def edit_single_image(input_image, prompt, search_prompt):
+    host = "https://api.stability.ai/v2beta/stable-image/edit/search-and-replace"
     negative_prompt = ""
     seed = 0
     output_format = "jpeg"
@@ -193,7 +199,7 @@ def edit_single_image(input_image, prompt, search_prompt):
         "negative_prompt": negative_prompt,
         "search_prompt": search_prompt,
     }
-    response = send_generation_request(host, params, input_image)
+    response = await send_generation_request_async(host, params, input_image)
     # Decode response
     output_image = response.content
     finish_reason = response.headers.get("finish-reason")
@@ -327,6 +333,11 @@ def venue(venueid):
 
 @app.route('/edit', methods=['GET', 'POST'])
 def edit():
+    # This is a wrapper function to handle synchronous Flask route
+    return asyncio.run(edit_async())
+
+
+async def edit_async():
     original_image = request.json['images']
     trend = request.json['trend']
     search_prompts, replace_prompts = get_search_and_replace_prompts(
@@ -334,25 +345,32 @@ def edit():
     print(f'Search prompts: {search_prompts}')
     print(f'Replace prompts: {replace_prompts}')
 
-    # Map an edit ID to the edited image
-    edited_dict = {}
     original_image_bytes = base64.decodebytes(bytes(original_image, 'utf-8'))
 
     # First round (prompt_0, prompt_1, prompt_2)
-    for i, (replace_prompt,
-            search_prompt) in enumerate(zip(replace_prompts, search_prompts)):
-        edited = edit_single_image(original_image_bytes, replace_prompt,
-                                   search_prompt)
-        edited_dict[f'{i}'] = edited
+    first_round_tasks = [
+        edit_single_image(original_image_bytes, rp, sp)
+        for rp, sp in zip(replace_prompts, search_prompts)
+    ]
+    first_round_results = await asyncio.gather(*first_round_tasks)
+    # Store first round results in edited_dict
+    edited_dict = {
+        f'{i}': result
+        for i, result in enumerate(first_round_results)
+    }
 
     # Second round (prompt_0 -> prompt_1, prompt_1 -> prompt_2, prompt_2 -> prompt_0)
     num_prompts = len(search_prompts)
-    for i in range(num_prompts):
-        next_idx = (i + 1) % num_prompts
-        edited = edit_single_image(edited_dict[f'{i}'],
-                                   replace_prompts[next_idx],
-                                   search_prompts[next_idx])
-        edited_dict[f'{i}->{next_idx}'] = edited
+    second_round_tasks = [
+        edit_single_image(edited_dict[f'{i}'],
+                          replace_prompts[(i + 1) % num_prompts],
+                          search_prompts[(i + 1) % num_prompts])
+        for i in range(num_prompts)
+    ]
+    second_round_results = await asyncio.gather(*second_round_tasks)
+    # Store second round results in edited_dict
+    for i, result in enumerate(second_round_results):
+        edited_dict[f'{i}->{(i + 1) % num_prompts}'] = result
 
     # Select the best image
     best_edited_image = select_best_image(original_image, edited_dict, trend)
