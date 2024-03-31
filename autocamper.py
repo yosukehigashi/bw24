@@ -24,6 +24,7 @@ https://support.google.com/google-ads/answer/7684791
 
 import os
 from google.ads.googleads.client import GoogleAdsClient
+import uuid
 
 os.environ["GOOGLE_ADS_CONFIGURATION_FILE_PATH"] = "./google_ads.yaml"
 CUSTOMER_ID = "6460230654"
@@ -92,7 +93,7 @@ def create_campaign_budget(client, customer_id, cost, ib_id):
     campaign_budget_service = client.get_service("CampaignBudgetService")
     campaign_budget_operation = client.get_type("CampaignBudgetOperation")
     campaign_budget = campaign_budget_operation.create
-    campaign_budget.name = f"Campaign budget for {str(ib_id)}"
+    campaign_budget.name = f"Campaign budget for {str(ib_id)}-{uuid.uuid4()}"
     campaign_budget.delivery_method = (
         client.enums.BudgetDeliveryMethodEnum.STANDARD
     )
@@ -121,7 +122,7 @@ def create_campaign(client, customer_id, campaign_budget, ib_id):
     campaign_service = client.get_service("CampaignService")
     campaign_operation = client.get_type("CampaignOperation")
     campaign = campaign_operation.create
-    campaign.name = f"Campaign for {str(ib_id)}"
+    campaign.name = f"Campaign for {str(ib_id)}-{uuid.uuid4()}"
     campaign.advertising_channel_type = (
         client.enums.AdvertisingChannelTypeEnum.SEARCH
     )
@@ -180,7 +181,7 @@ def create_ad_group(client, customer_id, campaign_resource_name, ib_id):
 
     ad_group_operation = client.get_type("AdGroupOperation")
     ad_group = ad_group_operation.create
-    ad_group.name = f"Adgroup for {str(ib_id)}"
+    ad_group.name = f"Adgroup for {str(ib_id)}-{uuid.uuid4()}"
     ad_group.status = client.enums.AdGroupStatusEnum.ENABLED
     ad_group.campaign = campaign_resource_name
     ad_group.type_ = client.enums.AdGroupTypeEnum.SEARCH_STANDARD
