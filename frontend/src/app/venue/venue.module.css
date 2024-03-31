@@ -59,3 +59,13 @@
 .wrapperDivider {
     margin: 2rem 0;
 }
+
+.wrapperBudget {
+    margin: 1rem 0;
+}
+
+.wrapperBudgetInput {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
