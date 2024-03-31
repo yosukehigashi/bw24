@@ -36,7 +36,7 @@ ib_trends = [
     "Meetings",
     "Dance",
     "Seminars",
-    "Training",
+    "Workouts",
     "Massages",
     "Teleworking",
     "Home Party",
@@ -367,13 +367,38 @@ def select_best_image(original_image, edited_dict, trend):
     return edited_dict[key]
 
 
-def select_relevant_trends(trends, ):
+def select_relevant_trends(trends, image_url):
     user_prompt = f"""
-    You are an expert at assessing if an event should be hosted at a venue. You will be given a list of possible events
-    with an image of the venue. For each possible event, you are to explain why that event should or should not be hosted
+    You are an expert at assessing whether the following events: {trends} could be hosted at a venue. You will be given 
+    an image of the venue. For each possible event, you are to explain why that event could or could not be hosted
     at the given venue and return an updated version of the possible events list without the events that shouldn't be 
-    hosted there.
+    hosted there. The last line of input should only be the comma separated list of possible events.
     """
+
+    image = [{
+        "type": "image_url",
+        "image_url": {
+            "url":
+                image_url
+        }
+    }]
+
+    print(f'Starting to check viability of trends for venue')
+    content = [{"type": "text", "text": user_prompt}] + image
+    # Call the GPT-4V model
+    response = client.chat.completions.create(
+        model="gpt-4-vision-preview",
+        messages=[{
+            "role": "system",
+            "content": "You are a helpful assistant."
+        }, {
+            "role": "user",
+            "content": content
+        }])
+    description = response.choices[0].message.content
+    print(description)
+
+    return description.split('\n')[-1].replace("*", "").replace("\"", "").split(',')
 
     
 def simple_prompt(prompt, sys_prompt="You are a helpful assistant."):
@@ -396,7 +421,8 @@ def simple_prompt(prompt, sys_prompt="You are a helpful assistant."):
 @app.route('/venue/<venueid>', methods=['GET'])
 def venue(venueid):
     title, urls, tags = scrape_listing(venueid)
-    return {'title': title, 'urls': urls[:3], 'tags': tags}
+
+    return {'title': title, 'urls': urls[:3], 'tags': tags, 'trends': select_relevant_trends(ib_trends, urls[0])}
 
 
 @app.route('/edit', methods=['GET', 'POST'])
