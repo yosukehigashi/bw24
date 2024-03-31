@@ -385,6 +385,3 @@ def add_geo_targeting(client, customer_id, campaign_resource_name):
 
     for result in campaign_criterion_response.results:
         print(f'Added campaign criterion "{result.resource_name}".')
-
-
-generate_campaign(ib_id=4300218326)

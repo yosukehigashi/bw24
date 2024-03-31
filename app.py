@@ -13,6 +13,8 @@ from flask import Flask, make_response, request, send_file
 from flask_cors import CORS
 from openai import OpenAI
 
+from autocamper import generate_campaign
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -25,6 +27,18 @@ engine_id = "esrgan-v1-x2plus"
 
 # OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+ib_trends = [
+    "Meetings",
+    "Dance",
+    "Seminars",
+    "Training",
+    "Massages",
+    "Teleworking",
+    "Home Party",
+    "Pizza Party",
+]
 
 
 def scrape_listing(room_id):
@@ -325,6 +339,33 @@ def select_best_image(original_image, edited_dict, trend):
     return edited_dict[key]
 
 
+def select_relevant_trends(trends, ):
+    user_prompt = f"""
+    You are an expert at assessing if an event should be hosted at a venue. You will be given a list of possible events
+    with an image of the venue. For each possible event, you are to explain why that event should or should not be hosted
+    at the given venue and return an updated version of the possible events list without the events that shouldn't be 
+    hosted there.
+    """
+
+
+
+def simple_prompt(prompt, sys_prompt="You are a helpful assistant."):
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{
+            "role": "system",
+            "content": sys_prompt,
+        }, {
+            "role": "user",
+            "content": prompt,
+        }],
+        max_tokens=100)
+
+    print(response.choices[0].message)
+
+    return response.choices[0].message
+
+
 @app.route('/venue/<venueid>', methods=['GET'])
 def venue(venueid):
     title, urls, tags = scrape_listing(venueid)
@@ -401,6 +442,39 @@ def upscale():
     #     fd.write(response.content)
 
     return {'image': base64.b64encode(response.content).decode('utf-8')}
+
+
+@app.route('/gen-campaign')
+def gen_campaign():
+    ib_id = request.json['venueid']
+    tags = request.json['tags']
+    trend = request.json['trend']
+    budget = request.json['budget']
+
+    headlines = [hl[4:-1].replace("!", "") for hl in simple_prompt(
+        f"""Please make 3 unique 4 word headlines to get people to click on my link based on the following data: 
+                        {trend}, {tags}
+                        """,
+        "You are a search engine optimization assistant."
+    ).content.split("\n")]
+
+    descriptions = [hl[4:-1].replace("!", "") for hl in simple_prompt(
+        f"""Please make 2 unique 15 word descriptions to get people to click on my link based on the following data:  
+                        {trend}, {tags}
+                        """,
+        "You are a search engine optimization assistant."
+    ).content.split("\n")]
+
+    keywords = [hl[2:].replace("!", "") for hl in simple_prompt(
+        f"""Generate 10 popular search keywords that would help google searches find my listing based on the following terms:  
+                            {trend}, {tags}
+                            """,
+        "Output only the terms."
+    ).content.split("\n")]
+
+    generate_campaign(ib_id, budget, headlines, descriptions, keywords)
+
+    return {"headlines": headlines, "descriptions": descriptions, "keywords": keywords}
 
 
 if __name__ == '__main__':
