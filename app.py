@@ -369,10 +369,11 @@ def select_best_image(original_image, edited_dict, trend):
 
 def select_relevant_trends(trends, image_url):
     user_prompt = f"""
-    You are an expert at assessing whether the following events: {trends} could be hosted at a venue. You will be given 
-    an image of the venue. For each possible event, you are to explain why that event could or could not be hosted
-    at the given venue and return an updated version of the possible events list without the events that shouldn't be 
-    hosted there. The last line of input should only be the comma separated list of possible events.
+    You are an expert at assessing whether the following events: {trends} could be hosted at a venue. You will be given\
+    an image of the venue. For each possible event, you are to explain why that event could or could not be hosted \
+    at the given venue and return an updated version of the possible events list without the events that shouldn't be \ 
+    hosted there. The last line of input should only be the comma separated list of possible events. Do not output any \
+    text after the list.
     """
 
     image = [{
@@ -422,7 +423,7 @@ def simple_prompt(prompt, sys_prompt="You are a helpful assistant."):
 def venue(venueid):
     title, urls, tags = scrape_listing(venueid)
 
-    return {'title': title, 'urls': urls[:3], 'tags': tags, 'trends': select_relevant_trends(ib_trends, urls[0])}
+    return {'title': title, 'urls': urls[:3], 'tags': tags, 'trends': select_relevant_trends(ib_trends, urls[0]), 'ib_trends': ib_trends}
 
 
 @app.route('/edit', methods=['GET', 'POST'])
@@ -504,26 +505,35 @@ def gen_campaign():
     trend = request.json['trend']
     budget = request.json['budget']
 
-    headlines = [hl[4:-1].replace("!", "") for hl in simple_prompt(
+    headlines = [hl[4:-1].replace("!", "").strip() for hl in simple_prompt(
         f"""Please make 3 unique 4 word headlines to get people to click on my link based on the following data: 
-                        {trend}, {tags}
+                        {trend}, {tags}. Each headline should be on it's own line.
                         """,
         "You are a search engine optimization assistant."
     ).content.split("\n")]
 
-    descriptions = [hl[4:-1].replace("!", "") for hl in simple_prompt(
+    headlines = [hl if len(hl) < 30 else hl[:29] for hl in headlines]
+    headlines = [hl for hl in headlines if hl != ""]
+
+    descriptions = [hl[4:-1].replace("!", "").strip() for hl in simple_prompt(
         f"""Please make 2 unique 15 word descriptions to get people to click on my link based on the following data:  
-                        {trend}, {tags}
+                        {trend}, {tags}. Each description should be on it's own line.
                         """,
         "You are a search engine optimization assistant."
     ).content.split("\n")]
 
-    keywords = [hl[2:].replace("!", "") for hl in simple_prompt(
-        f"""Generate 10 popular search keywords that would help google searches find my listing based on the following terms:  
-                            {trend}, {tags}
+    descriptions = [desc if len(desc) < 90 else desc[:88] for desc in descriptions]
+    descriptions = [desc for desc in descriptions if desc != ""]
+
+    keywords = [hl[2:].replace("!", "").strip() for hl in simple_prompt(
+        f"""Generate 10 popular english search keywords that would help google searches find my listing based on the following terms:  
+                            {trend}, {tags}. Each keyword should be on it's own line.
                             """,
         "Output only the terms."
     ).content.split("\n")]
+
+    keywords = [keyword if len(keyword) < 80 else keyword[:78] for keyword in keywords]
+    keywords = [kw for kw in keywords if kw != ""]
 
     generate_campaign(ib_id, budget, headlines, descriptions, keywords)
 
