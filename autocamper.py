@@ -25,7 +25,7 @@ https://support.google.com/google-ads/answer/7684791
 import os
 from google.ads.googleads.client import GoogleAdsClient
 
-os.environ["GOOGLE_ADS_CONFIGURATION_FILE_PATH"] = "~/Desktop/google_ads.yaml"
+os.environ["GOOGLE_ADS_CONFIGURATION_FILE_PATH"] = "./google_ads.yaml"
 CUSTOMER_ID = "6460230654"
 
 
