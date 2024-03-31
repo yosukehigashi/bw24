@@ -22,3 +22,5 @@
 /frontend/.vercel
 /frontend/*.tsbuildinfo
 /frontend/next-env.d.ts
+
+google_ads.yaml
