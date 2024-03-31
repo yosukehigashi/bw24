@@ -512,7 +512,7 @@ def gen_campaign():
         "You are a search engine optimization assistant."
     ).content.split("\n")]
 
-    headlines = [hl if len(hl) < 30 else hl[:29] for hl in headlines]
+    headlines = [hl if len(hl) < 30 else hl[:28] for hl in headlines]
     headlines = [hl for hl in headlines if hl != ""]
 
     descriptions = [hl.replace("!", "").strip() for hl in simple_prompt(
@@ -522,7 +522,7 @@ def gen_campaign():
         "You are a search engine optimization assistant."
     ).content.split("\n")]
 
-    descriptions = [desc if len(desc) < 90 else desc[:88] for desc in descriptions]
+    descriptions = [desc if len(desc) < 70 else desc[:68] for desc in descriptions]
     descriptions = [desc for desc in descriptions if desc != ""]
 
     keywords = [hl.replace("!", "").strip() for hl in simple_prompt(
@@ -532,7 +532,7 @@ def gen_campaign():
         "Output only the terms."
     ).content.split("\n")]
 
-    keywords = [keyword if len(keyword) < 80 else keyword[:78] for keyword in keywords]
+    keywords = [keyword if len(keyword) < 50 else keyword[:48] for keyword in keywords]
     keywords = [kw for kw in keywords if kw != ""]
 
     generate_campaign(ib_id, budget, headlines, descriptions, keywords)
