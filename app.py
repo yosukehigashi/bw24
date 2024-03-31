@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from flask import Flask, make_response, request, send_file
 from flask_cors import CORS
 from openai import OpenAI
+from PIL import Image
 
 from autocamper import generate_campaign
 
@@ -166,6 +167,30 @@ def encode_image_bytes(image_bytes):
     return base64.b64encode(image_bytes).decode('utf-8')
 
 
+def downscale_image(image_base64, scale_factor):
+    # Convert the base64 string to a PIL image
+    img_data = base64.b64decode(image_base64)
+    img = Image.open(io.BytesIO(img_data))
+
+    # Calculate the new size
+    width, height = img.size
+    new_size = (int(width * scale_factor), int(height * scale_factor))
+
+    # Resize the image
+    img_resized = img.resize(new_size, Image.Resampling.LANCZOS)
+
+    # Convert the image to RGB if it's RGBA
+    if img_resized.mode == 'RGBA':
+        img_resized = img_resized.convert('RGB')
+
+    # Convert the PIL image back to a base64 string
+    buffered = io.BytesIO()
+    img_resized.save(buffered, format="JPEG")
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+
+    return img_str
+
+
 async def send_generation_request_async(host, params, image):
     headers = {
         "Accept": "image/*",
@@ -252,7 +277,8 @@ def select_best_image(original_image, edited_dict, trend):
     images_list = [{
         "type": "image_url",
         "image_url": {
-            "url": f"data:image/jpeg;base64,{original_image}"
+            "url":
+            f"data:image/jpeg;base64,{downscale_image(original_image, 0.25)}"
         }
     }]
     for _, edited_image in edited_dict.items():
@@ -260,7 +286,7 @@ def select_best_image(original_image, edited_dict, trend):
             "type": "image_url",
             "image_url": {
                 "url":
-                f"data:image/jpeg;base64,{encode_image_bytes(edited_image)}"
+                f"data:image/jpeg;base64,{downscale_image(encode_image_bytes(edited_image), 0.25)}"
             }
         })
     print(f'Evaluating the best out of {len(edited_dict)} images...')
