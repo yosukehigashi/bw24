@@ -16,6 +16,8 @@ from PIL import Image
 
 from autocamper import generate_campaign
 
+from autocamper import generate_campaign
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -28,6 +30,18 @@ engine_id = "esrgan-v1-x2plus"
 
 # OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+ib_trends = [
+    "Meetings",
+    "Dance",
+    "Seminars",
+    "Training",
+    "Massages",
+    "Teleworking",
+    "Home Party",
+    "Pizza Party",
+]
 
 
 def scrape_listing(room_id):
@@ -353,6 +367,15 @@ def select_best_image(original_image, edited_dict, trend):
     return edited_dict[key]
 
 
+def select_relevant_trends(trends, ):
+    user_prompt = f"""
+    You are an expert at assessing if an event should be hosted at a venue. You will be given a list of possible events
+    with an image of the venue. For each possible event, you are to explain why that event should or should not be hosted
+    at the given venue and return an updated version of the possible events list without the events that shouldn't be 
+    hosted there.
+    """
+
+    
 def simple_prompt(prompt, sys_prompt="You are a helpful assistant."):
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
@@ -450,8 +473,10 @@ def upscale():
 
 @app.route('/gen-campaign')
 def gen_campaign():
+    ib_id = request.json['venueid']
     tags = request.json['tags']
     trend = request.json['trend']
+    budget = request.json['budget']
 
     headlines = [hl[4:-1].replace("!", "") for hl in simple_prompt(
         f"""Please make 3 unique 4 word headlines to get people to click on my link based on the following data: 
@@ -474,21 +499,10 @@ def gen_campaign():
         "Output only the terms."
     ).content.split("\n")]
 
+    generate_campaign(ib_id, budget, headlines, descriptions, keywords)
+
     return {"headlines": headlines, "descriptions": descriptions, "keywords": keywords}
 
-
-@app.route('/start-gac', methods=['POST'])
-def start_gac():
-    data = request.json
-    ib_id = data['venueid']
-    budget = data['budget']
-    headlines = data['headlines']
-    desc = data['desc']
-    keywords = data['keywords']
-
-    generate_campaign(ib_id, budget, headlines, desc, keywords)
-    return 0
-
-
+  
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug=True)
