@@ -497,7 +497,7 @@ def upscale():
     return {'image': base64.b64encode(response.content).decode('utf-8')}
 
 
-@app.route('/gen-campaign')
+@app.route('/gen-campaign', methods=['GET', 'POST'])
 def gen_campaign():
     ib_id = request.json['venueid']
     tags = request.json['tags']
