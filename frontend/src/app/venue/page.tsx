@@ -59,7 +59,7 @@ const Photo = ({ url, imageIdx, onCheckboxClick }: { url: string, imageIdx: numb
                 alt="Next.js Logo"
                 height={200}
                 // priority
-                />
+            />
         </div>
     )
 }
@@ -97,6 +97,7 @@ export default function VenuePage() {
     const [isAdvertiseLoading, setIsAdvertiseLoading] = useState<boolean>(false);
     const [resultsArray, setResultsArray] = useState<ResultLineItem[]>([]);
     const { value } = useVenueContext();
+    const [budget, setBudget] = useState<number>(0);
 
     const toggleImageFromSelection = (imageIdx: number) => {
         const isSelected = selectedImages.includes(imageIdx);
@@ -151,8 +152,23 @@ export default function VenuePage() {
         console.log('results', results)
     }
 
-    const handleAdvertise = () => {
+    const handleAdvertise = async (trend: string, budget: number) => {
         console.log('Advertise');
+
+        const response = await fetch(`http://127.0.0.1:8080/gen-campaign`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                venueid: value?.id,
+                tags: value?.tags,
+                trend,
+                budget,
+            }),
+        });
+
+        console.log('response', response);
     }
 
     return (
@@ -233,6 +249,7 @@ export default function VenuePage() {
                                             })}
                                         </RadioGroup>
 
+                                        {/* @TODO: Current trends */}
                                         <div className={styles.wrapperBudget}>
                                             <DialogTitle>Budget</DialogTitle>
                                             
@@ -240,15 +257,15 @@ export default function VenuePage() {
                                                 <Label>
                                                     Advertising budget in Japanese yen (¥)
                                                 </Label>
-                                                <Input type="number" />
+                                                <Input type="number" onChange={(event) => setBudget(Number(event.target.value))}/>
                                             </div>
                                         </div>
                                     </DialogContent>
                                     <DialogActions>
                                         <DialogTrigger disableButtonEnhancement>
-                                        <Button appearance="secondary">Close</Button>
+                                            <Button appearance="secondary">Close</Button>
                                         </DialogTrigger>
-                                        <Button appearance="primary" onClick={handleAdvertise}>Advertise</Button>
+                                        <Button appearance="primary" onClick={() => handleAdvertise(result.trend, budget)}>Advertise</Button>
                                         {isAdvertiseLoading && <Spinner size='large' />}
                                     </DialogActions>
                                 </DialogBody>
