@@ -505,9 +505,9 @@ def gen_campaign():
     trend = request.json['trend']
     budget = request.json['budget']
 
-    headlines = [hl[4:-1].replace("!", "").strip() for hl in simple_prompt(
+    headlines = [hl.replace("!", "").strip() for hl in simple_prompt(
         f"""Please make 3 unique 4 word headlines to get people to click on my link based on the following data: 
-                        {trend}, {tags}. Each headline should be on it's own line.
+                        {trend}, {tags}. Each headline should be the only text on it's own line with no leading number.
                         """,
         "You are a search engine optimization assistant."
     ).content.split("\n")]
@@ -515,9 +515,9 @@ def gen_campaign():
     headlines = [hl if len(hl) < 30 else hl[:29] for hl in headlines]
     headlines = [hl for hl in headlines if hl != ""]
 
-    descriptions = [hl[4:-1].replace("!", "").strip() for hl in simple_prompt(
+    descriptions = [hl.replace("!", "").strip() for hl in simple_prompt(
         f"""Please make 2 unique 15 word descriptions to get people to click on my link based on the following data:  
-                        {trend}, {tags}. Each description should be on it's own line.
+                        {trend}, {tags}. Each description should be the only text on it's own line with no leading number.
                         """,
         "You are a search engine optimization assistant."
     ).content.split("\n")]
@@ -525,9 +525,9 @@ def gen_campaign():
     descriptions = [desc if len(desc) < 90 else desc[:88] for desc in descriptions]
     descriptions = [desc for desc in descriptions if desc != ""]
 
-    keywords = [hl[2:].replace("!", "").strip() for hl in simple_prompt(
+    keywords = [hl.replace("!", "").strip() for hl in simple_prompt(
         f"""Generate 10 popular english search keywords that would help google searches find my listing based on the following terms:  
-                            {trend}, {tags}. Each keyword should be on it's own line.
+                            {trend}, {tags}. Each keyword should be the only text on it's own line with no leading number.
                             """,
         "Output only the terms."
     ).content.split("\n")]
