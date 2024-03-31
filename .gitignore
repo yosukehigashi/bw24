@@ -24,3 +24,5 @@
 /frontend/next-env.d.ts
 
 google_ads.yaml
+
+__pycache__/
