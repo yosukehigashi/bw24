@@ -14,15 +14,6 @@ export default function Home() {
   return (
     <FluentProvider theme={webLightTheme}>
         <main className={styles.main}>
-        <Image
-              className={styles.logo}
-              src="/pih.png"
-              alt="Next.js Logo"
-              width={230}
-              height={126}
-              priority
-            />
-
           <GetVenueForm />
           
           {/* <div className={styles.description}>
